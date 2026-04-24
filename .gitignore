@@ -1,0 +1,27 @@
+# Datasets (too large / not to be committed)
+data/
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Results / outputs (generate locally)
+results/
+*.png
+*.pdf
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
