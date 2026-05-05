@@ -1,6 +1,6 @@
 # Datasets (too large / not to be committed)
-data/
-*.csv
+# data/
+# *.csv
 
 # Python
 __pycache__/
@@ -11,9 +11,9 @@ venv/
 .venv/
 
 # Results / outputs (generate locally)
-results/
-*.png
-*.pdf
+# results/
+# *.png
+# *.pdf
 
 # macOS
 .DS_Store
