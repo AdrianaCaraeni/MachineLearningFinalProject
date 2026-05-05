@@ -20,7 +20,7 @@ def load_credit(filepath):
         header = next(reader)
 
         for i, col in enumerate(header[:-1]):
-            if 'num' in col:
+            if 'num' in col or i == 10:
                 numerical_cols.append(i)
             else:
                 categorical_cols.append(i)
