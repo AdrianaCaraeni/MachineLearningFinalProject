@@ -1,10 +1,15 @@
 """
-EC2: Heterogeneous ensemble — each base learner trains on its own bootstrap sample
-     of the training fold; final prediction is majority vote across learners.
-     (See also per-dataset comparison of each base learner vs. the full ensemble.)
+Heterogeneous ensemble evaluation (COMPSCI 589 final project).
 
-EC3: 10-fold stratified CV of the ensemble on the four official datasets:
-     Digits, Parkinson's, Rice, and Credit.
+Per the project spec (589FinalProject.pdf), reports use stratified 10-fold CV,
+accuracy, and macro-averaged F1.
+
+Ensemble: each base learner trains on its own bootstrap of the training fold;
+prediction is majority vote. Optional block compares each base learner alone
+(without bootstrap) on the same folds.
+
+Note: [Extra Credit #2] in the PDF is the Titanic challenging dataset — see
+evaluate_titanic.py — not this script.
 """
 
 import sys
@@ -19,7 +24,7 @@ from knn import KNN
 from decision_tree import DecisionTree
 from random_forest import RandomForest
 from gaussian_naive_bayes import GaussianNaiveBayes
-from cross_validation import make_stratified_folds, compute_accuracy, compute_f1
+from cross_validation import make_stratified_folds, compute_accuracy
 from cv_multiclass import macro_f1
 
 
@@ -124,9 +129,8 @@ class HeterogeneousEnsemble:
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 def f1_for_labels(y_true_2d, y_pred_2d):
+    """Macro-averaged F1 (matches project PDF reporting)."""
     y_true = y_true_2d.reshape(-1)
-    if len(np.unique(y_true)) <= 2:
-        return compute_f1(y_true_2d, y_pred_2d)
     y_pred = y_pred_2d.reshape(-1)
     return macro_f1(y_true, y_pred)
 
@@ -148,12 +152,12 @@ def cv_ensemble(configs, X, y, k=10, seed=42):
         yte2d = yte.reshape(-1, 1)
         accs.append(compute_accuracy(yte2d, preds))
         f1s.append(f1_for_labels(yte2d, preds))
-        print(f"  fold {held_out+1}/{k}  Acc={accs[-1]:.4f}  F1={f1s[-1]:.4f}", flush=True)
+        print(f"  fold {held_out+1}/{k}  Acc={accs[-1]:.4f}  Macro-F1={f1s[-1]:.4f}", flush=True)
     return np.mean(accs), np.mean(f1s)
 
 
 def cv_individual_base(ClassType, kwargs, X, y, k=10, seed=42):
-    """One base learner on full training fold each split (no bootstrap). EC2 comparison."""
+    """One base learner on full training fold each split (no bootstrap). Baseline vs ensemble."""
     Y = y.reshape(-1, 1)
     folds = make_stratified_folds(y, k=k, seed=seed)
     accs, f1s = [], []
@@ -296,27 +300,27 @@ if __name__ == '__main__':
     }
 
     ensemble_results = {}
-    ec2_individual_results = {}
+    individual_results = {}
 
     for name, (X, y, num_cols, _cat_cols) in datasets.items():
         p = best_params[name]
         print(f"\n{'='*50}")
-        print(f"EC3 — Ensemble CV — {name}")
+        print(f"Ensemble CV — {name}")
         print(f"{'='*50}")
 
         configs = build_configs(p, num_cols)
 
         acc, f1 = cv_ensemble(configs, X, y, k=10)
         ensemble_results[name] = (acc, f1)
-        print(f"  >> Ensemble  Acc={acc:.4f}  F1={f1:.4f}")
+        print(f"  >> Ensemble  Acc={acc:.4f}  Macro-F1={f1:.4f}")
 
-        print(f"\nEC2 — Individual base learners (same folds, no bootstrap) — {name}")
+        print(f"\nIndividual base learners (same folds, no bootstrap) — {name}")
         labels = ['KNN', 'DecisionTree', 'RandomForest', 'GaussianNB']
-        ec2_individual_results[name] = {}
+        individual_results[name] = {}
         for label, (ClassType, kwargs) in zip(labels, configs):
             ia, if1 = cv_individual_base(ClassType, kwargs, X, y, k=10)
-            ec2_individual_results[name][label] = (ia, if1)
-            print(f"  {label:<14} Acc={ia:.4f}  F1={if1:.4f}")
+            individual_results[name][label] = (ia, if1)
+            print(f"  {label:<14} Acc={ia:.4f}  Macro-F1={if1:.4f}")
 
     names = list(ensemble_results.keys())
     accs = [ensemble_results[n][0] for n in names]
@@ -326,14 +330,14 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.bar(x - width/2, accs, width, label='Accuracy', color='steelblue')
-    ax.bar(x + width/2, f1s, width, label='F1-Score', color='darkorange')
+    ax.bar(x + width/2, f1s, width, label='Macro F1', color='darkorange')
     for i, (a, f) in enumerate(zip(accs, f1s)):
         ax.text(i - width/2, a + 0.01, f'{a:.4f}', ha='center', fontsize=8)
         ax.text(i + width/2, f + 0.01, f'{f:.4f}', ha='center', fontsize=8)
     ax.set_xticks(x)
     ax.set_xticklabels(names)
     ax.set_ylabel('Score')
-    ax.set_title('EC3: Heterogeneous Ensemble (four official datasets)')
+    ax.set_title('Heterogeneous ensemble — four project datasets (macro F1)')
     ax.set_ylim(0, 1.05)
     ax.legend()
     ax.grid(True, alpha=0.3, axis='y')
@@ -343,9 +347,9 @@ if __name__ == '__main__':
     print("\nSaved fig_ensemble_summary.png")
 
     print("\n" + "=" * 50)
-    print("EC3 — FINAL ENSEMBLE RESULTS (per dataset)")
+    print("FINAL ENSEMBLE RESULTS (per dataset, macro F1)")
     print("=" * 50)
-    print(f"{'Dataset':<14} {'Accuracy':>10} {'F1':>10}")
+    print(f"{'Dataset':<14} {'Accuracy':>10} {'Macro-F1':>10}")
     for name in names:
         a, f = ensemble_results[name]
         print(f"{name:<14} {a:>10.4f} {f:>10.4f}")
