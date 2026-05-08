@@ -1,18 +1,14 @@
+import sys
+sys.path.insert(0, 'algorithms')
+
 from knn import KNN
 from decision_tree import DecisionTree
 from random_forest import RandomForest
 from cv_multiclass import cross_validate_multiclass
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, 'algorithms')
-
-
-
-
 #Digits is a 10-class image class prob and I used sklearn here only to load the dataset but not as ML algos 
-
 
 def load_digits_data():
     from sklearn import datasets       
@@ -21,10 +17,7 @@ def load_digits_data():
     y = np.asarray(digits[1])
     return X, y
 
-
-
 #wrappers want Y as 2D (n,1) since that matches how we pass it thru CV
-
 
 class KNNWrapper:
     def __init__(self, k=3):
